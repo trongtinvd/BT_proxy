@@ -28,8 +28,7 @@ char* get_domain_from_url(char* url){
 
     char* resource = strstr(url, "/");
     if(resource != NULL){
-        int i = (intptr_t)resource - (intptr_t)url;
-        url[i]='\0';
+        resource[0]='\0';
     }
 
     char* result = malloc(strlen(url));
@@ -57,9 +56,44 @@ char* get_resource_from_url(char* url){
     return result;
 }
 
+char* generate_http_request(char* domain, char* resource){
+    //"GET <resource> HTTP/1.1\r\nHost: <domain>\r\n\r\n"
+    char* result = malloc(100);
+    result[0] = '\0';
+
+    strcat(result, "GET ");
+    strcat(result, resource);
+    strcat(result, " HTTP/1.1\r\nHost: ");
+    strcat(result, domain);
+    strcat(result, "\r\n\r\n");
+
+    return result;
+}
+
+struct sockaddr_in get_server_addr(sa_family_t protocol, int port, char* domain){
+
+    struct sockaddr_in result;
+
+    result.sin_family = protocol;
+    result.sin_port = htons(port);
+
+    struct hostent* addr_info = gethostbyname(domain);
+    result.sin_addr.s_addr = *(u_int32_t*)*addr_info->h_addr_list;
+
+    return result;
+}
+
+void send_data(int sock_fd, char* data){
+    send(sock_fd, data, strlen(data), 0);
+}
+
+int receive_data(int sock_fd, char* buffer, int size){
+    return recv(sock_fd, buffer, size, 0);
+}
+
 int main(int argc, char** argv){
 
-    printf("//START//\r\n");
+    printf("\r\n//START//\r\n");
 
     if(argc != 3){
         printf("Usage: ./1712816 <url> <output file>\r\n");
@@ -70,48 +104,37 @@ int main(int argc, char** argv){
     char* output_file = argv[2];
     char* domain = get_domain_from_url(url);
     char* resource = get_resource_from_url(url);
+    char* http_request = generate_http_request(domain, resource);
 
     printf("domain: %s\r\n", domain);
     printf("resource: %s\r\n", resource);
 
-    printf("//END//\r\n");
-/*
-    int socketfd, clientfd;
-    char buffer[BUFFER_SIZE];
-    struct sockaddr_in server_address;
-
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(socketfd < 0){
-        printf("Cannot create socket\n");
-        return -1; 
+    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock_fd<0){
+        printf("Cannot create socket\r\n");
+        return -1;
     }
-    printf("Socket created. fd = %d \n", socketfd);
+    printf("Socket created: fd = %d\r\n", sock_fd);
 
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(PORT);
+    struct sockaddr_in server_addr = get_server_addr(AF_INET, HTTP_PORT, domain);
+    printf("Connecting to HTTP server\r\n");
 
-    memcpy(&server_address.sin_addr, inet_addr("example.com"), sizeof(in_addr_t));
-
-
-
-    if (inet_pton(AF_INET, "27.0.12.186", &server_address.sin_addr)
-        <= 0) {
-        printf("\nInvalid address/ Address not supported \n");
+    int client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    if(client_fd < 0){
+        printf("Cannot connect to HTTP/HTTPS server\r\n");
         return -1;
     }
 
-    if ((clientfd = connect(socketfd, (struct sockaddr*)&server_address, sizeof(server_address))) < 0) {
-        printf("\nConnection Failed \n");
-        return -1;
-    }
+    printf("Established connection. Fetching data...\r\n");
 
-    char* message = strdup("GET /page HTTP/1.1\r\nHost: example.com\r\n\r\n");
-    int n;
+    send_data(sock_fd, http_request);
+    char buffer[BUFFER_SIZE] = { 0 };
+    int n = receive_data(sock_fd, buffer, BUFFER_SIZE);
 
-    send(socketfd, message, strlen(message), 0);
-    n = read(socketfd, buffer, BUFFER_SIZE);
-    buffer[n-1] = '\0';
-    printf("%s\n", buffer);
-*/
+    printf("\r\n////////////////////////////////////////////\r\n");
+    printf("\r\n%s\r\n", buffer);
+    printf("\r\n////////////////////////////////////////////\r\n");
+
+    printf("\r\n//END//\r\n");
     return 0;
 }

@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/1712816",
-            "args": ["http://anglesharp.azurewebsites.net/Chunked/", "output.txt"],
+            "args": ["http://example.com/", "output.txt"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
