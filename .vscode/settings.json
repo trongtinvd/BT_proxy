@@ -1,8 +1,13 @@
 {
     "files.associations": {
+        "*.c": "c",
         "stdlib.h": "c",
         "socket.h": "c",
         "inet.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "string_functions.h": "c",
+        "in.h": "c",
+        "socket_functions.h": "c",
+        "file_functions.h": "c"
     }
 }
