@@ -38,6 +38,7 @@ int main(int argc, char** argv){
     int client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
     if(client_fd < 0){
         printf("Cannot connect to HTTP/HTTPS server\r\n");
+        close(sock_fd);
         return -1;
     }
 
@@ -45,7 +46,11 @@ int main(int argc, char** argv){
 
     send_data(sock_fd, http_request);
     char* data = receive_HTTP_content(sock_fd);
-    close(sock_fd);
+    if(data == NULL){
+        printf("error reading http data");
+        close(sock_fd);
+        return -1;
+    }
 
     printf("\r\n////////////////////////////////////////////\r\n");
     printf("\r\n%s\r\n", data);
@@ -60,7 +65,7 @@ int main(int argc, char** argv){
         printf("unable to write!\r\n");
     }
 
-    
+    close(sock_fd);    
     printf("\r\n//END//\r\n");
     return 0;
 }

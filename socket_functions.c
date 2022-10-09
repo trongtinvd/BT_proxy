@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "socket_functions.h"
 #include "string_functions.h"
+#include <stdio.h>
 
 struct sockaddr_in get_server_addr(sa_family_t protocol, int port, char* domain){
 
@@ -40,6 +41,20 @@ char* receive_HTTP_content(int sock_fd){
     memset(buffer, 0, buffer_size);
     int n = recv(sock_fd, buffer, buffer_size, 0);
     buffer[n] = 0;
+
+    if(http_is_sized(buffer)){
+        return recieve_sized_http_content(sock_fd, buffer, buffer_size);
+    }
+    else if(http_is_chunked(buffer)){
+        return recieve_chunked_http_content(sock_fd, buffer, buffer_size);
+    }
+    else{
+        return NULL;
+    }
+}
+
+char* recieve_sized_http_content(int sock_fd, char* buffer, int buffer_size){
+    int n = strlen(buffer);
     int content_length = get_http_content_length(buffer);
     int header_length = get_http_header_length(buffer);
     int content_received = n - header_length;
@@ -58,5 +73,56 @@ char* receive_HTTP_content(int sock_fd){
         content_received += n;
     }
 
+    return result;
+}
+
+char* recieve_chunked_http_content(int sock_fd, char* buffer, int buffer_size){
+    char* appendable_buffer = strdup(buffer);
+    char* temp = appendable_buffer;
+    temp += get_http_header_length(appendable_buffer);
+    
+
+    char* result = "";
+    while(1){
+
+        if(strlen(temp) == 0){
+            memset(buffer, 0, buffer_size);
+            recv(sock_fd, buffer, buffer_size, 0);
+
+            int temp_pos = temp - appendable_buffer;
+            appendable_buffer = concat_string(appendable_buffer, buffer, strlen(buffer));
+            temp = appendable_buffer + temp_pos;
+        }
+
+        char* hex_header = get_hex_length_header(temp);
+        int hex_length = hex_to_int(hex_header);
+        temp += strlen(hex_header) + strlen("\r\n");
+        if(hex_length == 0){
+            break;
+        }
+
+        
+
+        if(strlen(temp) < hex_length){
+            memset(buffer, 0, buffer_size);
+            recv(sock_fd, buffer, buffer_size, 0);
+
+            int temp_pos = temp - appendable_buffer;
+            appendable_buffer = concat_string(appendable_buffer, buffer, strlen(buffer));
+            temp = appendable_buffer + temp_pos;
+        }
+
+
+        while(strlen(temp) <= hex_length){
+            memset(buffer, 0, buffer_size);
+            recv(sock_fd, buffer, buffer_size, 0);
+
+            int temp_pos = temp - appendable_buffer;
+            appendable_buffer = concat_string(appendable_buffer, buffer, strlen(buffer));
+            temp = appendable_buffer + temp_pos;
+        }
+        result = concat_string(result, temp, hex_length + 2);
+        temp += hex_length + 2;
+    }
     return result;
 }

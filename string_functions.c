@@ -67,7 +67,7 @@ char* generate_http_request(const char* domain, const char* resource){
 
 int get_http_content_length(const char* http_data){
     char* num_start = strstr(http_data, "Content-Length: ") + strlen("Content-Length: ");
-    char* num_end = strstr(num_start, "\r\n\r\n");
+    char* num_end = strstr(num_start, "\r\n");
     
     char num[10];
     memcpy(num, num_start, num_end - num_start);
@@ -77,4 +77,57 @@ int get_http_content_length(const char* http_data){
 int get_http_header_length(const char* http_data){
     char* content = strstr(http_data, "\r\n\r\n") + 4;
     return content - http_data;
+}
+
+_Bool http_is_sized(const char* http_data){
+    char* content_length_position = strstr(http_data, "Content-Length: ");
+    char* start_of_http_position = strstr(http_data, "\r\n\r\n");
+
+    return content_length_position > http_data && content_length_position < start_of_http_position;
+}
+
+_Bool http_is_chunked(const char* http_data){
+    char* transfer_encoding_position = strstr(http_data, "Transfer-Encoding: chunked");
+    char* start_of_http_position = strstr(http_data, "\r\n\r\n");
+
+    return transfer_encoding_position > http_data && transfer_encoding_position < start_of_http_position;
+}
+
+char* get_hex_length_header(const char* http_data){
+    char* rn = strstr(http_data, "\r\n");
+    int header_length = rn - http_data;
+    char* result = malloc(header_length + 1);
+    strncpy(result, http_data, header_length);
+    result[header_length] = 0;
+    return result;
+}
+
+int hex_to_int(const char* text){
+    int text_length = strlen(text);
+    int result = 0;
+    for(int i=0;i<text_length;i++){
+        char c =text[i];
+        int value;
+        if(c >= '0' && c <= '9'){
+            value = c - '0';
+        }
+        else if(c >= 'a' && c <= 'f'){
+            value = c - 'a' + 10;
+        }
+        else if(c >= 'A' && c <= 'F'){
+            value = c - 'A' + 10;
+        }
+        else{
+            return -1;
+        }
+        result = result * 16 + value;
+    }
+    return result;
+}
+
+char* concat_string(const char* text_1, const char* text_2, const int text_2_length){
+    char* result = malloc(strlen(text_1) + text_2_length);
+    strcpy(result, text_1);
+    strncpy(result + strlen(text_1), text_2, text_2_length);
+    return result;
 }
