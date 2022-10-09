@@ -4,6 +4,6 @@
 int write_to_file(const char* file_name, const char* data){
     FILE* file = fopen(file_name, "w");
     fprintf(file, "%s", data);
-    //fclose(file);
+    fclose(file);
     return 1;
 }

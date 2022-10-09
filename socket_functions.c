@@ -45,7 +45,7 @@ char* receive_HTTP_content(int sock_fd){
     int content_received = n - header_length;
 
     char* result = malloc(content_length + 1);
-    result = strdup(buffer + header_length);
+    strcpy(result, buffer + header_length);
 
     while(content_received < content_length){
         memset(buffer, 0, buffer_size);
