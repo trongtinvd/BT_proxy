@@ -21,6 +21,8 @@ char* get_hex_length_header(const char* http_data);
 
 int hex_to_int(const char* text);
 
-char* concat_string(const char* text1, const char* text2, const int text2_length);
+char* concat_string(const char* text_1, const int text_1_length, const char* text_2, const int text_2_length);
+
+char* duplicate_string(const char* text, int length);
 
 #endif

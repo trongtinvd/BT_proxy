@@ -125,9 +125,17 @@ int hex_to_int(const char* text){
     return result;
 }
 
-char* concat_string(const char* text_1, const char* text_2, const int text_2_length){
-    char* result = malloc(strlen(text_1) + text_2_length);
+char* concat_string(const char* text_1, const int text_1_length, const char* text_2, const int text_2_length){
+    char* result = malloc(text_1_length + text_2_length + 1);
     strcpy(result, text_1);
-    strncpy(result + strlen(text_1), text_2, text_2_length);
+    strncpy(result + text_1_length, text_2, text_2_length);
+    result[text_1_length + text_2_length] = 0;
+    return result;
+}
+
+char* duplicate_string(const char* text, int length){
+    char* result = malloc(length + 1);
+    strncpy(result, text, length);
+    result[length] = 0;
     return result;
 }

@@ -32,10 +32,16 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    struct sockaddr_in server_addr = get_server_addr(AF_INET, HTTP_PORT, domain);
     printf("Connecting to HTTP server\r\n");
-
+    struct sockaddr_in server_addr = get_server_addr(AF_INET, HTTP_PORT, domain);
     int client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+
+    if(client_fd < 0){
+        printf("HTTP connection fail, trying HTTPS...\r\n");
+        server_addr = get_server_addr(AF_INET, HTTPS_PORT, domain);
+        client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    }
+
     if(client_fd < 0){
         printf("Cannot connect to HTTP/HTTPS server\r\n");
         close(sock_fd);
