@@ -25,4 +25,8 @@ char* concat_string(const char* text_1, const int text_1_length, const char* tex
 
 char* duplicate_string(const char* text, int length);
 
+_Bool http_is_ok(const char* http_response);
+
+char* http_error_code(const char* http_response);
+
 #endif

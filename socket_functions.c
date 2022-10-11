@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "socket_functions.h"
 #include "string_functions.h"
-#include <stdio.h>
+#define BUFFER_SIZE 4096
 
 struct sockaddr_in get_server_addr(sa_family_t protocol, int port, char* domain){
 
@@ -35,48 +35,49 @@ int send_data(int sock_fd, char* data){
 
 char* receive_HTTP_content(int sock_fd){
 
-    int buffer_size = 1024;
-    char buffer[buffer_size];
+    char buffer[BUFFER_SIZE];
+    char* appendable_buffer = duplicate_string("", 0);
 
-    memset(buffer, 0, buffer_size);
-    int n = recv(sock_fd, buffer, buffer_size, 0);
-    buffer[n] = 0;
+    do {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_receive = recv(sock_fd, buffer, BUFFER_SIZE, 0);
+        char* old_buffer = appendable_buffer;
+        appendable_buffer = concat_string(appendable_buffer, strlen(appendable_buffer), buffer, bytes_receive);
+        free(old_buffer);
+    } while (strstr(appendable_buffer, "\r\n\r\n") < appendable_buffer);
 
-    if(http_is_sized(buffer)){
-        return recieve_sized_http_content(sock_fd, buffer, buffer_size);
+    if(!http_is_ok(appendable_buffer)){
+        return http_error_code(appendable_buffer);
     }
-    else if(http_is_chunked(buffer)){
-        return recieve_chunked_http_content(sock_fd, buffer, buffer_size);
+    else if(http_is_sized(appendable_buffer)){
+        return recieve_sized_http_content(sock_fd, appendable_buffer, buffer, BUFFER_SIZE);
+    }
+    else if(http_is_chunked(appendable_buffer)){
+        return recieve_chunked_http_content(sock_fd, appendable_buffer, buffer, BUFFER_SIZE);
     }
     else{
-        return NULL;
+        return "Html response have neither Content-Size or Transport-Encoding. Error.";
     }
 }
 
-char* recieve_sized_http_content(int sock_fd, char* buffer, int buffer_size){
-    int n = strlen(buffer);
-    int content_length = get_http_content_length(buffer);
-    int header_length = get_http_header_length(buffer);
-    int content_received = n - header_length;
-
-    char* result = duplicate_string(buffer + header_length, strlen(buffer + header_length));
+char* recieve_sized_http_content(int sock_fd, char* appendable_buffer, char* buffer, int buffer_size){
+    int content_length = get_http_content_length(appendable_buffer);
+    int header_length = get_http_header_length(appendable_buffer);
+    int content_received = strlen(appendable_buffer) - header_length;
 
     while(content_received < content_length){
         memset(buffer, 0, buffer_size);
-        n = recv(sock_fd, buffer, buffer_size, 0);
-        if(n <= 0){
-            break;
-        }
-        buffer[n] = 0;
-        strcat(result, buffer);
-        content_received += n;
+        int bytes_receive = recv(sock_fd, buffer, buffer_size, 0);
+        char* old_buffer = appendable_buffer;
+        appendable_buffer = concat_string(appendable_buffer, strlen(appendable_buffer), buffer, bytes_receive);
+        free(old_buffer);
+        content_received += bytes_receive;
     }
 
-    return result;
+    return duplicate_string(appendable_buffer + header_length, strlen(appendable_buffer + header_length));
 }
 
-char* recieve_chunked_http_content(int sock_fd, char* buffer, int buffer_size){
-    char* appendable_buffer = duplicate_string(buffer, strlen(buffer));
+char* recieve_chunked_http_content(int sock_fd, char* appendable_buffer, char* buffer, int buffer_size){
     int read_position = get_http_header_length(appendable_buffer);
 
     char* result = "";
@@ -92,9 +93,9 @@ char* recieve_chunked_http_content(int sock_fd, char* buffer, int buffer_size){
 
         while(strlen(appendable_buffer + read_position) <= bytes_to_read){
             memset(buffer, 0, buffer_size);
-            recv(sock_fd, buffer, buffer_size, 0);
+            int bytes_receive = recv(sock_fd, buffer, buffer_size, 0);
             char* old_buffer = appendable_buffer;
-            appendable_buffer = concat_string(appendable_buffer, strlen(appendable_buffer), buffer, strlen(buffer));
+            appendable_buffer = concat_string(appendable_buffer, strlen(appendable_buffer), buffer, bytes_receive);
             free(old_buffer);
         }
         result = concat_string(result, strlen(result), appendable_buffer + read_position, bytes_to_read);

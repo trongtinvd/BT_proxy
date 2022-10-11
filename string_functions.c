@@ -96,6 +96,9 @@ _Bool http_is_chunked(const char* http_data){
 char* get_hex_length_header(const char* http_data){
     char* rn = strstr(http_data, "\r\n");
     int header_length = rn - http_data;
+    if(header_length <= 0){
+        return duplicate_string("", 0);
+    }
     char* result = malloc(header_length + 1);
     strncpy(result, http_data, header_length);
     result[header_length] = 0;
@@ -118,7 +121,7 @@ int hex_to_int(const char* text){
             value = c - 'A' + 10;
         }
         else{
-            return -1;
+            return result;
         }
         result = result * 16 + value;
     }
@@ -138,4 +141,15 @@ char* duplicate_string(const char* text, int length){
     strncpy(result, text, length);
     result[length] = 0;
     return result;
+}
+
+_Bool http_is_ok(const char* http_response){
+    char* rn = strstr(http_response, "\r\n");
+    char* code_200 = strstr(http_response, "200 OK");
+    return code_200 > http_response && rn > code_200;
+}
+
+char* http_error_code(const char* http_response){
+    char* rn = strstr(http_response, "\r\n");
+    return duplicate_string(http_response, rn - http_response);
 }

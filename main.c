@@ -4,9 +4,7 @@
 #include "string_functions.h"
 #include "socket_functions.h"
 #include "file_functions.h"
-#define BUFFER_SIZE 1024
 #define HTTP_PORT 80
-#define HTTPS_PORT 443
 
 int main(int argc, char** argv){
 
@@ -15,7 +13,7 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    printf("\r\n//START//\r\n");
+    printf("\r\n//START//\r\n\r\n");
 
     char* url = argv[1];
     char* output_file = argv[2];
@@ -37,13 +35,7 @@ int main(int argc, char** argv){
     int client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
     if(client_fd < 0){
-        printf("HTTP connection fail, trying HTTPS...\r\n");
-        server_addr = get_server_addr(AF_INET, HTTPS_PORT, domain);
-        client_fd = connect(sock_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-    }
-
-    if(client_fd < 0){
-        printf("Cannot connect to HTTP/HTTPS server\r\n");
+        printf("Cannot connect to HTTP server\r\n");
         close(sock_fd);
         return -1;
     }
@@ -62,7 +54,7 @@ int main(int argc, char** argv){
     printf("\r\n%s\r\n", data);
     printf("\r\n////////////////////////////////////////////\r\n");
 
-    printf("writing to %s...\r\n", output_file);
+    printf("\r\nwriting to %s...\r\n", output_file);
 
     if(write_to_file(output_file, data)){
         printf("complete!\r\n");

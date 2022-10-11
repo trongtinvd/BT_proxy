@@ -7,8 +7,8 @@ int send_data(int sock_fd, char* data);
 
 char* receive_HTTP_content(int sock_fd);
 
-char* recieve_sized_http_content(int sock_fd, char* buffer, int buffer_size);
+char* recieve_sized_http_content(int sock_fd, char* appendable_buffer, char* buffer, int buffer_size);
 
-char* recieve_chunked_http_content(int sock_fd, char* buffer, int buffer_size);
+char* recieve_chunked_http_content(int sock_fd, char* appendable_buffer, char* buffer, int buffer_size);
 
 #endif
